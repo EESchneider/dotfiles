@@ -50,33 +50,33 @@ function! GitDeletions()
     endif
 endfunction
 
-function! GitFileInsertions()
-    if !IsGitDir()
-        return ''
-    endif
-    let file_path=gitgutter#utility#file_relative_to_repo_root()
-    let file_path=escape(file_path, '.')
-    echom file_path
-    let inserts=matchstr(system('git diff --numstat'), '^\d\+\ze\s\+\d\+\s*'.file_path)
-    if empty(inserts) || inserts ==# '0'
-        return ''
-    else
-        return ' '.inserts.' '
-    endif
-endfunction
+" function! GitFileInsertions()
+"     if !IsGitDir()
+"         return ''
+"     endif
+"     let file_path=gitgutter#utility#file_relative_to_repo_root()
+"     let file_path=escape(file_path, '.')
+"     echom file_path
+"     let inserts=matchstr(system('git diff --numstat'), '^\d\+\ze\s\+\d\+\s*'.file_path)
+"     if empty(inserts) || inserts ==# '0'
+"         return ''
+"     else
+"         return ' '.inserts.' '
+"     endif
+" endfunction
 
-function! GitFileDeletions()
-    if !IsGitDir()
-        return ''
-    endif
-    let file_path=gitgutter#utility#file_relative_to_repo_root()
-    let deletions=matchstr(system('git diff --numstat'), '^\d\+\s\+\zs\d\+\ze\s*'.file_path)
-    if empty(deletions) || deletions ==# '0'
-        return ''
-    else
-        return ' '.deletions.' '
-    endif
-endfunction
+" function! GitFileDeletions()
+"     if !IsGitDir()
+"         return ''
+"     endif
+"     let file_path=gitgutter#utility#file_relative_to_repo_root()
+"     let deletions=matchstr(system('git diff --numstat'), '^\d\+\s\+\zs\d\+\ze\s*'.file_path)
+"     if empty(deletions) || deletions ==# '0'
+"         return ''
+"     else
+"         return ' '.deletions.' '
+"     endif
+" endfunction
 
 let modes = {
             \ 'n': 'N',
