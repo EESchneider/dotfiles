@@ -1,5 +1,6 @@
+let g:in_git_directory = 1
 function! IsGitDir()
-    return 1
+    return g:in_git_directory
 endfunction
 
 function! GitHead()
