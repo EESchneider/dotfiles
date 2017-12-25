@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 import Control.Applicative ((<$>))
 import Control.Monad (join)
 import Network.HTTP.Types.Status (statusIsSuccessful)
