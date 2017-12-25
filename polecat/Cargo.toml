@@ -1,0 +1,6 @@
+[package]
+name = "polecat"
+version = "0.1.0"
+authors = ["Evelyn Schneider <evelyn.eliz.schneider@gmail.com>"]
+
+[dependencies]
