@@ -79,7 +79,7 @@ fn fuzzy_clock(fuzziness: u8) -> String {
         hour = (hour + 1) % 24;
         minute = 60 - minute;
     }
-    let small_hour = hour % 13;  // 12 hours, with separate noon and midnight
+    let small_hour = hour % 13 + hour / 13;  // 12 hours, with separate noon and midnight
 
     return match (hour, minute) {
         (0, 0) => String::from("midnight"),
