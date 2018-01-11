@@ -5,24 +5,50 @@ use std::io::Read;
 use regex::Regex;
 
 fn main() {
-    let location = std::env::args().skip(1).next().expect("Usage: weather <location>");
-    let weather_api_url = format!("http://api.openweathermap.org/data/2.5/weather?q={}&units=metric&mode=json&appid=886705b4c1182eb1c69f28eb8c520e20", location);
-    let mut res = reqwest::get(&weather_api_url);
+    let geolocation_url = "http://freegeoip.net/json/";
+
+    let mut geo_res = reqwest::get(geolocation_url);
     for _ in 0..5 {  // Make a total of 6 requests if they keep failing
-        if res.is_err() {
-            res = reqwest::get(&weather_api_url);
+        if geo_res.is_err() {
+            geo_res = reqwest::get(geolocation_url);
         }
     }
-    let mut res = res.expect("Request failed");
+    let mut geo_res = geo_res.expect("GeoIP request failed");
+    let mut geo_text = String::new();
+    geo_res.read_to_string(&mut geo_text).expect("Failed to read GeoIP");
+
+    let lat: f32 = Regex::new(r#""latitude":([^,]*)"#).unwrap().captures(&geo_text)
+        .and_then(|x| x.get(1))
+        .map(|x| x.as_str())
+        .and_then(|x| x.parse().ok())
+        .unwrap();
+    let lon: f32 = Regex::new(r#""longitude":([^,]*)"#).unwrap().captures(&geo_text)
+        .and_then(|x| x.get(1))
+        .map(|x| x.as_str())
+        .and_then(|x| x.parse().ok())
+        .unwrap();
+
+    let weather_api_url = format!("http://api.openweathermap.org/data/2.5/weather?lat={}&lon={}&units=metric&mode=json&appid=886705b4c1182eb1c69f28eb8c520e20", lat, lon);
+    let mut weather_res = reqwest::get(&weather_api_url);
+    for _ in 0..5 {  // Make a total of 6 requests if they keep failing
+        if weather_res.is_err() {
+            weather_res = reqwest::get(&weather_api_url);
+        }
+    }
+    let mut weather = weather_res.expect("Request failed");
 
     let mut text = String::new();
-    res.read_to_string(&mut text).expect("Failed to read response");
+    weather.read_to_string(&mut text).expect("Failed to read response");
 
-    let temp = Regex::new(r#""temp":([^,]*)"#).unwrap().captures(&text)
+    let temp: f32 = Regex::new(r#""temp":([^,]*)"#).unwrap().captures(&text)
         .and_then(|x| x.get(1))
-        .unwrap().as_str();
-    let temp: f32 = temp.parse().expect("Failed to read date");
-    let temp: f32 = temp.round();
+        .map(|x| x.as_str())
+        .and_then(|x| x.parse().ok()).expect("Failed to read temperature");
+
+    let city = Regex::new(r#""name":"([^"]*)"#).unwrap().captures(&text)
+                          .and_then(|x| x.get(1))
+                          .map(|x| x.as_str())
+                          .expect("Failed to read city name");
 
     let conditions = vec![
         ("", Regex::new(r#""id":2\d{2}"#).unwrap()), // Thunderstorm
@@ -45,5 +71,6 @@ fn main() {
         icon = "";
     }
 
-    println!("{} {} °C", icon, temp);
+    println!("{} {:.0} °C", icon, temp);
+    println!("city={} lat={} lon={}", city, lat, lon);
 }
