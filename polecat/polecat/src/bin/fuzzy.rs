@@ -40,7 +40,7 @@ fn pretty_num(num: i8) -> String {
     }
 
     let ones = match ones {
-        0 => String::from("midnight"),
+        0 => String::from(""),
         1 => String::from("one"),
         2 => String::from("two"),
         3 => String::from("three"),
@@ -76,10 +76,10 @@ fn fuzzy_clock(fuzziness: u8) -> String {
     };
 
     if relation == "to" {
-        hour += 1;
+        hour = (hour + 1) % 24;
         minute = 60 - minute;
     }
-    let small_hour = hour % 12;
+    let small_hour = hour % 13;  // 12 hours, with separate noon and midnight
 
     return match (hour, minute) {
         (0, 0) => String::from("midnight"),
