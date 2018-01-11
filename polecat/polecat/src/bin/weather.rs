@@ -1,19 +1,20 @@
 extern crate reqwest;
 extern crate regex;
 
-use std::io::Read;
 use regex::Regex;
+use std::io::Read;
+use std::time::Duration;
+use reqwest::header::{Headers, RetryAfter};
 
 fn main() {
-    let geolocation_url = "http://freegeoip.net/json/";
+    let mut client = reqwest::ClientBuilder::new();
+    let mut retry = Headers::new();
+    retry.set(RetryAfter::Delay(Duration::from_secs(2)));
+    client.default_headers(retry);
+    let client = client.build().unwrap();
 
-    let mut geo_res = reqwest::get(geolocation_url);
-    for _ in 0..5 {  // Make a total of 6 requests if they keep failing
-        if geo_res.is_err() {
-            geo_res = reqwest::get(geolocation_url);
-        }
-    }
-    let mut geo_res = geo_res.expect("GeoIP request failed");
+    let geolocation_url = "http://freegeoip.net/json/";
+    let mut geo_res = client.get(geolocation_url).send().expect("GeoIP request failed");
     let mut geo_text = String::new();
     geo_res.read_to_string(&mut geo_text).expect("Failed to read GeoIP");
 
@@ -29,16 +30,10 @@ fn main() {
         .unwrap();
 
     let weather_api_url = format!("http://api.openweathermap.org/data/2.5/weather?lat={}&lon={}&units=metric&mode=json&appid=886705b4c1182eb1c69f28eb8c520e20", lat, lon);
-    let mut weather_res = reqwest::get(&weather_api_url);
-    for _ in 0..5 {  // Make a total of 6 requests if they keep failing
-        if weather_res.is_err() {
-            weather_res = reqwest::get(&weather_api_url);
-        }
-    }
-    let mut weather = weather_res.expect("Request failed");
+    let mut weather_res = client.get(&weather_api_url).send().expect("Weather request failed");
 
     let mut text = String::new();
-    weather.read_to_string(&mut text).expect("Failed to read response");
+    weather_res.read_to_string(&mut text).expect("Failed to read response");
 
     let temp: f32 = Regex::new(r#""temp":([^,]*)"#).unwrap().captures(&text)
         .and_then(|x| x.get(1))
