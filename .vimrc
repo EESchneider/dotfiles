@@ -1,35 +1,41 @@
 " plug installs
 call plug#begin("~/.vim/plugged")
 Plug 'EESchneider/vim-rebase-mode'
+Plug 'KeyboardFire/vim-minisnip'
 Plug 'airblade/vim-gitgutter'
 Plug 'ap/vim-buftabline'
-Plug 'christoomey/vim-tmux-navigator'
 Plug 'easymotion/vim-easymotion'
-Plug 'jaxbot/semantic-highlight.vim'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'junegunn/fzf.vim'
-Plug 'junegunn/goyo.vim'
-Plug 'majutsushi/tagbar'
+Plug 'kana/vim-arpeggio'
 Plug 'machakann/vim-sandwich'
-Plug 'michaeljsmith/vim-indent-object'
+Plug 'majutsushi/tagbar'
 Plug 'neovimhaskell/haskell-vim'
-Plug 'oblitum/rainbow'
-Plug 'reedes/vim-pencil'
+Plug 'romainl/vim-qf'
 Plug 'sheerun/vim-polyglot'
 Plug 'svermeulen/vim-easyclip'
 Plug 'tpope/vim-commentary'
 Plug 'tpope/vim-fugitive'
 Plug 'tpope/vim-repeat'
-Plug 'tpope/vim-surround'
+Plug 'tpope/vim-sleuth'
 Plug 'tpope/vim-vinegar'
-Plug 'vim-scripts/Conque-GDB'
 Plug 'w0rp/ale'
 Plug 'wellle/targets.vim'
+Plug 'osyo-manga/vim-over'
+
+" pretty colors
 Plug 'NLKNguyen/papercolor-theme'
-Plug 'KeyboardFire/vim-minisnip'
-Plug 'romainl/vim-qf'
-Plug 'tpope/vim-sleuth'
+Plug 'rakr/vim-two-firewatch'
+Plug 'nanotech/jellybeans.vim'
+Plug 'sonph/onehalf', { 'rtp': 'vim/' }
 call plug#end()
+
+colorscheme onehalflight
+
+" for changing cursor shape in st
+let &t_SI = "\<Esc>[6 q"
+let &t_SR = "\<Esc>[4 q"
+let &t_EI = "\<Esc>[2 q"
 
 filetype plugin indent on
 set wildmenu
@@ -46,20 +52,21 @@ set number
 set termguicolors
 set diffopt+=vertical
 
-let g:ConqueGdb_Leader='3'
+noremap <C-h> <C-w>h
+noremap <C-j> <C-w>j
+noremap <C-k> <C-w>k
+noremap <C-l> <C-w>l
 
-inoremap kj <ESC>
-snoremap kj <ESC>
+call arpeggio#load()
+Arpeggio inoremap jk <Esc>
+Arpeggio vnoremap jk <Esc>
+Arpeggio imap kl <C-i>
 
-if strftime('%H') > 6 && strftime('%H') < 20
-    set bg=light
-    colorscheme PaperColor " daytime color
-else
-    set bg=dark
-    colorscheme nocturne " nighttime color
-endif
-
-let g:ale_linters={'cpp':['clang', 'gcc', 'clangtidy', 'cppcheck', 'cpplint']}
+let g:ale_linters={
+            \ 'cpp':['clang', 'gcc', 'clangtidy', 'cppcheck', 'cpplint'],
+            \ 'haskell': ['brittany', 'stack-ghc', 'stack-build', 'ghc-mod', 'stack-ghc-mod', 'hdevtools', 'hfmt']
+            \}
+" let g:ale_linters={'cpp':['clang', 'gcc', 'clangtidy', 'cppcheck', 'cpplint'],'haskell':['hlint', 'hdevtools', 'hfmt']}
 let g:ale_set_quickfix=1
 let g:ale_set_loclist=0
 let g:ale_fixers = {'cpp':['clang-format']}
@@ -68,6 +75,9 @@ noremap ; :
 noremap q; q:
 
 command! -nargs=1 Run new | resize 10 | silent execute '.!./' . string(<q-args>) . ' 2>&1' | nnoremap <silent> <buffer> q :q<CR> | setlocal ft=output readonly nomodifiable buftype=nowrite bufhidden=delete noswapfile nobuflisted
+
+vnoremap > >gv
+vnoremap < <gv
 
 " " clear highlight when the cursor moves
 " set incsearch
@@ -140,13 +150,22 @@ augroup filetype_cpp
     autocmd BufEnter *.cpp,*.h,*.hpp setlocal cinoptions=g-1
 augroup END
 
+" autorender latex
+augroup filetype_tex
+    autocmd!
+    autocmd BufWritePost *.tex,*.latex silent! execute '!latexmk -pdf % && latexmk -c'
+    autocmd BufEnter *.tex,*.latex nnoremap <buffer> j gj
+    autocmd BufEnter *.tex,*.latex nnoremap <buffer> k gk
+    autocmd BufEnter *.tex,*.latex nnoremap <buffer> 0 g0
+    autocmd BufEnter *.tex,*.latex nnoremap <buffer> $ g$
+augroup END
+
 " - does mark-setting
 nnoremap - m
 vnoremap - m
 
-" U and I are scroll up and down, respectively
-nnoremap U <C-y>
-nnoremap I <C-e>
+nnoremap 8 <C-y>
+nnoremap 7 <C-e>
 
 " indendation
 set smarttab
@@ -166,7 +185,9 @@ map <Space> <Nop>
 let mapleader="\<Space>"
 nnoremap <Leader>w :w<CR>
 nnoremap <Leader>q :bd<CR>
-nnoremap <Leader>e :e<Space>
+nnoremap <Leader>e :Files<CR>
+nnoremap <Leader>f :GFiles?<CR>
+nnoremap <Leader>h :Helptags<CR>
 
 nnoremap 9 ^
 vnoremap 9 ^
@@ -216,6 +237,7 @@ let g:buftabline_numbers=1
 let g:ale_set_signs=0
 map <silent> <Leader>ak <Plug>(ale_previous)
 map <silent> <Leader>aj <Plug>(ale_next)
+nmap <silent> ga <Plug>(ale_detail)
 noremap <silent> <Leader>ll :lopen<CR>
 noremap <silent> <Leader>lk :lprev<CR>
 noremap <silent> <Leader>lj :lnext<CR>
@@ -262,32 +284,6 @@ augroup filetype_hs
 augroup END
 
 augroup cherryline
-    autocmd BufEnter * source ~/cherries/cherryline/cherryline.vim
+    autocmd BufEnter * source ~/.vim/cherryline.vim
 augroup END
-
-noremap - m
-let g:SignatureMap = {
-            \ 'Leader'             :  "-",
-            \ 'PlaceNextMark'      :  "-,",
-            \ 'ToggleMarkAtLine'   :  "-.",
-            \ 'PurgeMarksAtLine'   :  "--",
-            \ 'DeleteMark'         :  "d-",
-            \ 'PurgeMarks'         :  "-<Space>",
-            \ 'PurgeMarkers'       :  "-<BS>",
-            \ 'GotoNextLineAlpha'  :  "']",
-            \ 'GotoPrevLineAlpha'  :  "'[",
-            \ 'GotoNextSpotAlpha'  :  "`]",
-            \ 'GotoPrevSpotAlpha'  :  "`[",
-            \ 'GotoNextLineByPos'  :  "]'",
-            \ 'GotoPrevLineByPos'  :  "['",
-            \ 'GotoNextSpotByPos'  :  "]`",
-            \ 'GotoPrevSpotByPos'  :  "[`",
-            \ 'GotoNextMarker'     :  "]-",
-            \ 'GotoPrevMarker'     :  "[-",
-            \ 'GotoNextMarkerAny'  :  "]=",
-            \ 'GotoPrevMarkerAny'  :  "[=",
-            \ 'ListBufferMarks'    :  "-/",
-            \ 'ListBufferMarkers'  :  "-?"
-            \ }
-
-let g:minisnip_trigger = '<C-j>'
+source ~/.vim/cherryline.vim  " make it so re-sourcing this .vimrc doesn't hide the bar

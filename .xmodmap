@@ -1,3 +1,3 @@
-remove mod1 = Alt_L
-keysym Alt_L = Super_L
-add mod2 = Alt_L
+clear Lock
+! Bind Caps_Lock to mod5
+keycode 66 = ISO_Level3_Shift

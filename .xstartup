@@ -1,4 +1,3 @@
 xrandr --output VGA-1 --mode 1920x1080
-feh --image-bg white --bg-max '/home/evie/wallpapers/torii.jpg'
+feh --image-bg white --bg-max --randomize /home/evie/wallpapers/rose.jpg
 xsetroot -cursor_name left_ptr
-compton -CGb
