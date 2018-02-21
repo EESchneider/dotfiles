@@ -154,10 +154,11 @@ augroup END
 augroup filetype_tex
     autocmd!
     autocmd BufWritePost *.tex,*.latex silent! execute '!latexmk -pdf % && latexmk -c'
-    autocmd BufEnter *.tex,*.latex nnoremap <buffer> j gj
-    autocmd BufEnter *.tex,*.latex nnoremap <buffer> k gk
-    autocmd BufEnter *.tex,*.latex nnoremap <buffer> 0 g0
-    autocmd BufEnter *.tex,*.latex nnoremap <buffer> $ g$
+    autocmd BufEnter *.tex,*.latex noremap <buffer> j gj
+    autocmd BufEnter *.tex,*.latex noremap <buffer> k gk
+    autocmd BufEnter *.tex,*.latex noremap <buffer> 0 g0
+    autocmd BufEnter *.tex,*.latex noremap <buffer> 9 g0
+    autocmd BufEnter *.tex,*.latex noremap <buffer> $ g$
 augroup END
 
 " - does mark-setting

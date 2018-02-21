@@ -9,22 +9,27 @@ alias nvim='nvim -u ~/.vimrc'
 alias xclip='xclip -sel c'
 
 shorten_string() {
-   let string=$1
-   let "max_len=$2-3"
+   let "max_len=$1"
+   string="$2"
 
    let len="${#string}"
-   if [ $len > $max_len ]; then
-      let new_len=1+$len-$max_len
-      echo "...$(expr substr $string $new_len $len)"
+   if [ "$len" -gt "$max_len" ]; then
+      let "start_point=$len-$max_len"
+      echo "...${string:$start_point}"
    else
       echo $string
    fi
 }
+shorten_prompt() {
+   read arg
+   echo "$(shorten_string 25 $arg)"
+}
 
 autoload -Uz compinit
 compinit
-export PS1="%B[%F{red}%n %F{green}: %F{magenta}%~%f]%b $ "
+export PS1='%B[%F{red}%n %F{green}: %F{magenta}$(dirs | shorten_prompt)%f]%b $ '
 zstyle ':completion:*' menu select
+setopt PROMPT_SUBST
 setopt COMPLETE_ALIASES
 setopt HISTIGNOREDUPS
 setopt CORRECT
