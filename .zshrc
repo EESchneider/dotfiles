@@ -7,6 +7,7 @@ alias logout="pkill -KILL -u $UID"
 alias stackrun='stack build && stack exec $(basename $(pwd))'
 alias nvim='nvim -u ~/.vimrc'
 alias xclip='xclip -sel c'
+alias rm='rm_safer'
 
 shorten_string() {
    let "max_len=$1"
@@ -23,6 +24,14 @@ shorten_string() {
 shorten_prompt() {
    read arg
    echo "$(shorten_string 25 $arg)"
+}
+
+rm_safer() {
+   if [ -f "$1" ]; then
+      mv "$1" "$HOME/.compost/$1"
+   else
+      command rm "$@"
+   fi
 }
 
 autoload -Uz compinit

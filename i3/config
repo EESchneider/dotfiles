@@ -4,12 +4,17 @@ floating_modifier $mod
 gaps inner 20
 gaps outer 10
 for_window [class="^.*"] border pixel 2
+for_window [class="feh"] floating enable
 focus_follows_mouse no
 mouse_warping none
+force_focus_wrapping no
+
+# bindsym           ISO_Level3_Shift exec polybar-msg cmd show
+# bindsym --release ISO_Level3_Shift exec polybar-msg cmd hide
 
 bindsym $mod+Return exec konsole
 bindsym $mod+Shift+q kill
-bindsym $mod+space exec dmenu_run
+bindsym $mod+space exec --no-startup-id dmenu_run
 
 bindsym $mod+h focus left
 bindsym $mod+j focus down
@@ -21,10 +26,10 @@ bindsym $mod+Shift+j move down
 bindsym $mod+Shift+k move up
 bindsym $mod+Shift+l move right
 
-bindsym $mod+Mod1+h resize shrink right 1px
-bindsym $mod+Mod1+j resize grow down 1px
-bindsym $mod+Mod1+k resize shrink down 1px
-bindsym $mod+Mod1+l resize grow right 1px
+bindsym $mod+Mod1+h resize shrink right 20px
+bindsym $mod+Mod1+j resize grow down 20px
+bindsym $mod+Mod1+k resize shrink down 20px
+bindsym $mod+Mod1+l resize grow right 20px
 
 bindsym $mod+o fullscreen toggle
 

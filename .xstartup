@@ -1,3 +1,5 @@
 xrandr --output VGA-1 --mode 1920x1080
-feh --image-bg white --bg-max --randomize /home/evie/wallpapers/rose.jpg
+# feh --image-bg white --bg-max --randomize /home/evie/wallpapers/wallpaper2.png
+feh --image-bg white --bg-tile --randomize /home/evie/wallpapers/moonlesbian.png
 xsetroot -cursor_name left_ptr
+# vim:ft=sh
