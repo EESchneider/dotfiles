@@ -34,8 +34,8 @@ bindsym $mod+Mod1+l resize grow right 20px
 
 bindsym $mod+o fullscreen toggle
 
-bindsym $mod+w floating disable
-bindsym $mod+e floating enable
+bindsym $mod+f floating toggle
+bindsym $mod+Tab focus mode_toggle
 
 bindsym $mod+comma scratchpad show
 bindsym $mod+period move scratchpad

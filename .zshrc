@@ -1,6 +1,7 @@
 #!/bin/zsh
 export VISUAL=nvim
 export EDITOR=$VISUAL
+export PATH=":$HOME/.local/bin:$PATH"
 VBoxClient-all stop ; VBoxClient-all start
 alias ls='ls --color'
 alias logout="pkill -KILL -u $UID"
@@ -28,7 +29,8 @@ shorten_prompt() {
 
 rm_safer() {
    if [ -f "$1" ]; then
-      mv "$1" "$HOME/.compost/$1"
+      local filename="$(basename $1)"
+      mv "$1" "$HOME/.compost/$filename"
    else
       command rm "$@"
    fi

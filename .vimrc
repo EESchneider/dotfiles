@@ -5,12 +5,14 @@ Plug 'KeyboardFire/vim-minisnip'
 Plug 'airblade/vim-gitgutter'
 Plug 'ap/vim-buftabline'
 Plug 'easymotion/vim-easymotion'
+Plug 'godlygeek/tabular'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'junegunn/fzf.vim'
 Plug 'kana/vim-arpeggio'
+Plug 'lervag/vimtex', { 'for': 'latex' }
 Plug 'machakann/vim-sandwich'
 Plug 'majutsushi/tagbar'
-Plug 'neovimhaskell/haskell-vim'
+Plug 'neovimhaskell/haskell-vim', { 'for': 'haskell' }
 Plug 'romainl/vim-qf'
 Plug 'sheerun/vim-polyglot'
 Plug 'tpope/vim-commentary'
@@ -20,7 +22,6 @@ Plug 'tpope/vim-sleuth'
 Plug 'tpope/vim-vinegar'
 Plug 'w0rp/ale'
 Plug 'wellle/targets.vim'
-Plug 'lervag/vimtex'
 
 " pretty colors
 Plug 'NLKNguyen/papercolor-theme'
@@ -31,8 +32,19 @@ call plug#end()
 " }}}
 
 " Pretty things up! {{{
-set bg=dark
-colorscheme jellybeans
+function! DarkTheme()
+    set bg=dark
+    colorscheme jellybeans
+endfunction
+function! LightTheme()
+    set bg=light
+    colorscheme onehalflight
+endfunction
+if strftime("%H") >= 7 && strftime("%H") < 19
+    call LightTheme()  " daytime theme
+else
+    call DarkTheme()  " nighttime theme
+endif
 
 " for changing cursor shape in st
 let &t_SI = "\<Esc>[6 q"
@@ -56,6 +68,8 @@ set wildmenu
 set incsearch
 set nohlsearch
 set infercase
+set expandtab
+set shiftwidth=4
 set path+=**
 set mouse=a
 set scrolloff=3
@@ -67,6 +81,7 @@ set termguicolors
 set diffopt+=vertical
 set tags=./.tags,./tags,tags
 set hidden
+set noshowmode
 
 let g:netrw_liststyle=3
 let g:netrw_winsize=25
@@ -98,6 +113,7 @@ nnoremap 7 <C-e>
 " buffer nvaigation
 nnoremap <silent> K :bp<CR>
 nnoremap <silent> J :bn<CR>
+nnoremap <silent> M J
 
 " window navigation
 noremap <C-h> <C-w>h
@@ -203,7 +219,7 @@ augroup END
 augroup filetype_asm
     autocmd BufEnter *.s setlocal commentstring=#\ %s
     autocmd BufEnter *.s noremap <silent> <buffer> ]t :call search('^\ze\s*\w\+:')<CR>
-    autocmd BufEnter *.s noremap <silent> <buffer> kt :call search('^\ze\s*\w\+:', 'b')<CR>
+    autocmd BufEnter *.s noremap <silent> <buffer> [t :call search('^\ze\s*\w\+:', 'b')<CR>
 augroup END
 " }}}
 
@@ -243,7 +259,8 @@ Arpeggio imap kl <C-i>
 let g:ale_linters={
             \ 'cpp':['clang', 'gcc', 'clangtidy', 'cppcheck', 'cpplint'],
             \ 'haskell': ['brittany', 'stack-ghc', 'stack-build', 'ghc-mod', 'stack-ghc-mod', 'hdevtools', 'hfmt'],
-            \ 'asm': []
+            \ 'asm': [],
+            \ 'latex': []
             \}
 " let g:ale_linters={'cpp':['clang', 'gcc', 'clangtidy', 'cppcheck', 'cpplint'],'haskell':['hlint', 'hdevtools', 'hfmt']}
 let g:ale_set_quickfix=1
@@ -275,8 +292,6 @@ function! ALEUnderlineErrors()
 endfunction
 augroup autoclose_loclist_quickfix
     autocmd!
-    autocmd FileType qf noremap <buffer> <silent> <Return> <Return>:lclose<CR>
-    autocmd FileType qf noremap <buffer> <silent> g <Return>
     autocmd FileType qf noremap <buffer> <silent> q :q<CR>
     autocmd FileType qf match Error /error\ze:/
 augroup END
