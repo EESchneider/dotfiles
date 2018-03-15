@@ -7,6 +7,8 @@ alias ls='ls --color'
 alias logout="pkill -KILL -u $UID"
 alias stackrun='stack build && stack exec $(basename $(pwd))'
 alias nvim='nvim -u ~/.vimrc'
+alias em='emacsclient -cn'
+alias emt='emacsclient -t'
 alias xclip='xclip -sel c'
 alias rm='rm_safer'
 
