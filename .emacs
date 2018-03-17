@@ -16,7 +16,7 @@
 (scroll-bar-mode -1)
 (show-paren-mode 1)
 (blink-cursor-mode 0)
-(global-linum-mode 1)
+(global-linum-mode 0)
 
 (setq backup-directory-alist
       `((".*" . ,temporary-file-directory)))
@@ -28,6 +28,7 @@
 (setq dired-omit-files (concat dired-omit-files "\\|^\\..+$"))
 (add-hook 'dired-mode-hook 'dired-hide-details-mode)
 
+(setq-default browse-url-generic-program "min")
 
 
 ;;; make C-w into backward-delete-word like it should be
@@ -67,8 +68,9 @@ With argument, do this that many times"
               scroll-down-aggressively 0.01)
 
 ;;; prettify stuff
+(require 'moe-theme)
+(require 'moe-theme-switcher)
 (setq-default moe-light-pure-white-background-in-terminal t)
-(add-to-list 'custom-theme-load-path ".emacs.d/elpa/moe-theme-20170914.2111/")
 (add-to-list 'default-frame-alist '(font . "Iosevka-14"))
 
 (defun daytime-p (&optional dawn dusk)
@@ -95,7 +97,7 @@ With argument, do this that many times"
                     daytime
                   nighttime))))
 
-(add-hook 'server-visit-hook (lambda () (eliza-load-theme 'moe-light 'zerodark)))
+(add-hook 'server-visit-hook (lambda () (eliza-load-theme 'moe-light 'moe-dark)))
 
 
 ;;; evil utils
@@ -117,7 +119,8 @@ With argument, do this that many times"
   (evil-define-key 'replace map key action)
   (evil-define-weak-key map key action))
 
-;;;  evil staples
+
+;;;  evil-staples
 (define-minor-mode evil-staples
   "Basic conveniences"
   :global t
@@ -126,8 +129,10 @@ With argument, do this that many times"
 (defun eliza-init-evil ()
   "Configure vanilla evil"
 
+  ;; Ex commands
   (evil-ex-define-cmd      "source"                         'load-current-file)
 
+  ;; Keybindings
   (evil-define-weak-key    evil-staples-map (kbd "C-u")     'evil-scroll-up) ; for some reason this is not bound by default
 
   (evil-define-weak-key    evil-staples-map ";"             'evil-ex)
@@ -144,6 +149,15 @@ With argument, do this that many times"
   (evil-define-strong-key  evil-staples-map (kbd "C-j")     'evil-window-down)
   (evil-define-strong-key  evil-staples-map (kbd "C-k")     'evil-window-up)
   (evil-define-strong-key  evil-staples-map (kbd "C-l")     'evil-window-right)
+  (evil-define-strong-key  evil-staples-map (kbd "C-l")     'evil-window-right)
+
+  (add-hook 'evil-normal-state-entry-hook    (lambda () (set-face-background 'mode-line "#a4c9f5")))
+  (add-hook 'evil-insert-state-entry-hook    (lambda () (set-face-background 'mode-line "#f5fffa")))
+  (add-hook 'evil-replace-state-entry-hook   (lambda () (set-face-background 'mode-line "#f43a66")))
+  (add-hook 'evil-visual-state-entry-hook    (lambda () (set-face-background 'mode-line "#8ebfff")))
+  (add-hook 'evil-motion-state-entry-hook    (lambda () (set-face-background 'mode-line "#c186d6")))
+  (add-hook 'evil-operator-state-entry-hook  (lambda () (set-face-background 'mode-line "#d4c9f5")))
+  (add-hook 'evil-emacs-state-entry-hook     (lambda () (set-face-background 'mode-line "#0fadb1")))
 
   (evil-staples 1))
 
@@ -152,7 +166,7 @@ With argument, do this that many times"
   (evil-define-key 'normal package-menu-mode-map "i" #'package-menu-mark-install)
   (evil-define-key 'normal package-menu-mode-map "u" #'package-menu-mark-unmark)
   (evil-define-key 'normal package-menu-mode-map "x" #'package-menu-execute)
-  (evil-set-initial-state 'packake-menu-mode 'normal))
+  (evil-set-initial-state 'package-menu-mode 'normal))
 
 ;;;  eliza-outline
 (define-minor-mode eliza-outline
@@ -255,7 +269,7 @@ With argument, do this that many times"
 (use-package lispyville
   :ensure lispy
   :ensure t
-  :delight                         ; delight lispyville, but not lispy
+  :delight                         ; delight lispyville, but not lispy ;
   :config
   (setq-default lispy-comment-use-single-semicolon t)
   (lispy-set-key-theme '(lispy
@@ -269,7 +283,7 @@ With argument, do this that many times"
   (evil-define-key 'normal lispyville-mode-map (kbd "M-j") #'lispy-move-down)
   (evil-define-key 'normal lispyville-mode-map (kbd "M-l") #'lispy-move-down)
 
-  ;; don't use lispy's expansion of (; -> ;;) and (;; -> autoload cookie)
+  ;; don't use lispy's expansion of (; -> ;;) and (;; -> autoload cookie) ;
   (define-key lispy-mode-map (kbd ";") nil)
   ;; lispy's default behavior is to escape all quotes inside of quotes, rather than exiting the quote
   (define-key lispy-mode-map (kbd "\"") nil)
@@ -291,6 +305,56 @@ With argument, do this that many times"
   (evil-define-weak-key evil-staples-map (kbd "[ e") 'flycheck-previous-error)
   (evil-define-weak-key evil-staples-map (kbd "] e") 'flycheck-next-error)
   (global-flycheck-mode 1))
+
+
+;;;  evil-commentary
+(use-package evil-commentary
+  :ensure t
+  :delight
+  :config
+  (evil-commentary-mode 1))
+
+
+;;; mode-line (wip)
+(defun eliza-buffer-changed-text (&optional buf)
+  "Blank if the buffer has not been changed.
+[+] if the buffer has been changed.
+[RO] if the buffer is read-only.
+[RO+] if the buffer is read-only but has been changed anyway."
+ (cond ((and buffer-read-only
+              (buffer-modified-p buf))
+         "[RO+]")
+        ((and buffer-read-only
+              (not (buffer-modified-p buf)))
+         "[RO]")
+        ((and (not buffer-read-only)
+              (buffer-modified-p buf))
+         "[+]")
+        ("")))
+
+(defun eliza-git-head ()
+  "Get a prettier version of (vc-mode vc-mode)"
+  (replace-regexp-in-string "Git:" "" vc-mode))
+
+(defun eliza-all-strings (&rest strings)
+  "If anything in STRINGS is the empty string, returns an empty list.
+Otherwise, concatenates all the element of STRINGS."
+  (if (seq-every-p (apply-partially #'string< "") strings) ; the empty string is less than all non-empty strings
+      (apply #'concat strings)
+    '("")))
+
+(setq mode-line-format
+      `("%e" mode-line-front-space
+        (:propertize (:eval (eliza-all-strings (eliza-git-head) " "))
+                     face (:background "#eb6086" :foreground "#ebfff0"))
+        (:propertize (25 " " mode-line-buffer-identification " " (:eval (eliza-buffer-changed-text)))
+                     face (:background "#e096a0" :foreground "#ebfff0"))
+        "   "
+        mode-line-misc-info
+        mode-line-position evil-mode-line-tag
+        "   "
+        mode-line-modes
+        mode-line-end-spaces))
 
 ;;; generated section
 
