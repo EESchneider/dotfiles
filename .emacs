@@ -392,6 +392,9 @@ Otherwise, concatenates all the element of STRINGS."
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(ansi-color-names-vector [])
+ '(custom-safe-themes
+   (quote
+    ("291588d57d863d0394a0d207647d9f24d1a8083bb0c9e8808280b46996f3eb83" default)))
  '(flycheck-disabled-checkers (quote (emacs-lisp-checkdoc)))
  '(inhibit-startup-screen t)
  '(package-selected-packages
