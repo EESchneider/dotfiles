@@ -5,10 +5,8 @@
 
 ;;; function declarations: shut up the linter some
 (declare-function evil-define-key        nil)
-(declare-function evil-delay             nil)
 (declare-function evil-ex-define-cmd     nil)
 (declare-function evil-set-initial-state nil)
-(declare-function lispy-set-key-theme    nil)
 
 ;;; pure vanilla emacs
 (menu-bar-mode -1)
@@ -29,7 +27,6 @@
 (add-hook 'dired-mode-hook 'dired-hide-details-mode)
 
 (setq-default browse-url-generic-program "min")
-
 
 ;;; make C-w into backward-delete-word like it should be
 (defun delete-word (arg)
@@ -55,7 +52,10 @@ With argument, do this that many times"
 ;;; <tab> settings
 (setq-default indent-tabs-mode nil
               tab-width 4)
-(global-set-key (kbd "TAB") 'tab-to-tab-stop)
+(global-set-key (kbd "TAB") (make-hippie-expand-function
+                             '(try-expand-dabbrev
+                               try-complete-lisp-symbol-partially
+                               try-expand-dabbrev-all-buffers)))
 
 
 ;;; scroll more vim-like
@@ -108,14 +108,14 @@ With argument, do this that many times"
 
 (defun evil-define-weak-key (map key action)
   "Define a key that works in move-y evil states!"
-  (evil-define-key 'motion map key action)
-  (evil-define-key 'visual map key action)
-  (evil-define-key 'normal map key action)
+  (evil-define-key 'motion   map key action)
+  (evil-define-key 'visual   map key action)
+  (evil-define-key 'normal   map key action)
   (evil-define-key 'operator map key action))
 
 (defun evil-define-strong-key (map key action)
   "Define a key that works in both type-y and move-y evil states!"
-  (evil-define-key 'insert map key action)
+  (evil-define-key 'insert  map key action)
   (evil-define-key 'replace map key action)
   (evil-define-weak-key map key action))
 
@@ -142,6 +142,8 @@ With argument, do this that many times"
   (evil-define-weak-key    evil-staples-map "8"             'evil-scroll-line-up)
   (evil-define-weak-key    evil-staples-map (kbd "SPC w")   'save-buffer)
   (evil-define-weak-key    evil-staples-map (kbd "SPC SPC") #'execute-extended-command)
+  (evil-define-key 'normal evil-staples-map (kbd "M-p")     'switch-to-prev-buffer)
+  (evil-define-key 'normal evil-staples-map (kbd "M-n")     'switch-to-next-buffer)
   (evil-define-key 'insert evil-staples-map (kbd "C-x C-p") 'evil-complete-previous)
   (evil-define-key 'insert evil-staples-map (kbd "C-x C-n") 'evil-complete-next)
   (evil-define-key 'insert evil-staples-map (kbd "C-x C-l") 'evil-complete-previous-line)
@@ -174,16 +176,23 @@ With argument, do this that many times"
   :keymap (make-sparse-keymap))
 
 (defun eliza-init-outline ()
-  "Outline minor mode keybindings"
+  (interactive)
+  "Outline minor mode keybindings + settings"
   (evil-define-key 'normal eliza-outline-map (kbd "g O")   'outline-hide-body)
   (evil-define-key 'normal eliza-outline-map (kbd "g o")   'outline-toggle-children)
   (evil-define-key 'normal eliza-outline-map (kbd "[ s")   'outline-previous-visible-heading)
   (evil-define-key 'normal eliza-outline-map (kbd "] s")   'outline-next-visible-heading)
+  (evil-define-weak-key    eliza-outline-map (kbd "RET")   (lambda () (interactive)
+                                                             (if (outline-on-heading-p)
+                                                                 (outline-toggle-children))))
+  (setq outline-regexp ";;; +")
+  (set-display-table-slot standard-display-table
+                          'selective-display
+                          (string-to-vector " (...)"))
   (eliza-outline))
-(provide 'eliza-outline)
 
-(add-hook 'outline-minor-mode-hook (lambda () (eliza-outline t)))
-(add-hook 'emacs-lisp-mode-hook (lambda () (eliza-outline t)))
+(add-hook 'outline-minor-mode-hook (lambda () (eliza-init-outline)))
+(add-hook 'emacs-lisp-mode-hook (lambda () (outline-minor-mode t)))
 
 ;;; package-specific settings
 (require 'use-package)
@@ -226,6 +235,7 @@ With argument, do this that many times"
   :ensure t
   :after (evil)
   :config
+
   (evil-define-weak-key evil-staples-map (kbd ", w") 'avy-goto-word-0-below)
   (evil-define-weak-key evil-staples-map (kbd ", b") 'avy-goto-word-0-above)
   (evil-define-weak-key evil-staples-map (kbd ", j") 'avy-goto-line-below)
@@ -265,57 +275,54 @@ With argument, do this that many times"
   (global-set-key (kbd "C-x C-f") 'counsel-file-jump)
   (evil-define-weak-key evil-staples-map (kbd "SPC e") 'counsel-file-jump))
 
-;;;  lispyville 
-(use-package lispyville
-  :ensure lispy
-  :ensure t
-  :delight                         ; delight lispyville, but not lispy ;
-  :config
-  (setq-default lispy-comment-use-single-semicolon t)
-  (lispy-set-key-theme '(lispy
-                         operators
-                         c-w
-                         (escape insert)
-                         additional
-                         slurp/barf-lispy))
-  (evil-define-key 'normal lispyville-mode-map (kbd "M-k") #'lispy-move-up)
-  (evil-define-key 'normal lispyville-mode-map (kbd "M-h") #'lispy-move-up)
-  (evil-define-key 'normal lispyville-mode-map (kbd "M-j") #'lispy-move-down)
-  (evil-define-key 'normal lispyville-mode-map (kbd "M-l") #'lispy-move-down)
-
-  ;; don't use lispy's expansion of (; -> ;;) and (;; -> autoload cookie) ;
-  (define-key lispy-mode-map (kbd ";") nil)
-  ;; lispy's default behavior is to escape all quotes inside of quotes, rather than exiting the quote
-  (define-key lispy-mode-map (kbd "\"") nil)
-
-  (add-hook 'lispy-mode-hook #'lispyville-mode)
-  (add-hook 'emacs-lisp-mode-hook (lambda ()
-                                    (lispy-mode 1))))
-
-;;;  mips-mode
+;;;  mips
 (use-package mips-mode
   :ensure t
   :mode "\\.s$")
-        
+
 ;;;  flycheck
 (use-package flycheck
   :ensure t
   :init
-  (setq-default flycheck-disabled-checkers '(emacs-lisp-checkdoc))
   (evil-define-weak-key evil-staples-map (kbd "[ e") 'flycheck-previous-error)
   (evil-define-weak-key evil-staples-map (kbd "] e") 'flycheck-next-error)
+  :config
   (global-flycheck-mode 1))
 
-
-;;;  evil-commentary
-(use-package evil-commentary
+;;;    flycheck-inline
+(use-package flycheck-inline
   :ensure t
-  :delight
+  :ensure flycheck
+  :after (flycheck)
   :config
-  (evil-commentary-mode 1))
+  (flycheck-inline-enable))
 
+;;;  purpose
+(use-package window-purpose
+  :ensure t
+  :config
+  (purpose-mode))
+;;;  telephone-line
+(use-package telephone-line
+  :ensure t
+  :init
+  (telephone-line-defsegment eliza-telephone-vc ()
+    (replace-regexp-in-string "Git:" "" vc-mode))
+  (telephone-line-defsegment eliza-telephone-position ()
+    (concat (line-number-at-pos (point)) " / " (line-number-at-pos (point-max))))
+  
+  )
 
-;;; mode-line (wip)
+;;; mode-line
+(defun eliza-add-center-padding (left right)
+  "Takes lists LEFT and RIGHT and concatenates them.
+Adding enough spaces in between to fill out the modeline.
+If the result is too big for the modeline, adds a single space between because then it's no longer my problem."
+  (let ((distance (- (window-total-width) (length left) (length right))))
+    (if (natnump distance)
+        (concat left (repeat distance ? ) right)
+      (concat left " " right))))
+
 (defun eliza-buffer-changed-text (&optional buf)
   "Blank if the buffer has not been changed.
 [+] if the buffer has been changed.
@@ -343,18 +350,39 @@ Otherwise, concatenates all the element of STRINGS."
       (apply #'concat strings)
     '("")))
 
-(setq mode-line-format
-      `("%e" mode-line-front-space
-        (:propertize (:eval (eliza-all-strings (eliza-git-head) " "))
-                     face (:background "#eb6086" :foreground "#ebfff0"))
-        (:propertize (25 " " mode-line-buffer-identification " " (:eval (eliza-buffer-changed-text)))
-                     face (:background "#e096a0" :foreground "#ebfff0"))
-        "   "
-        mode-line-misc-info
-        mode-line-position evil-mode-line-tag
-        "   "
-        mode-line-modes
-        mode-line-end-spaces))
+(defun eliza-flycheck-status ()
+  "Get a prettier version of flycheck's status"
+  (let ((status (flycheck-mode-line-status-text)))
+    (concat (if (string-match "0/" status)
+                ""
+              (replace-regexp-in-string ".*\([0-9]+\)/.*" "\1 error(s)" status))
+            " "
+            (if (string-match "/0" status)
+                ""
+              (replace-regexp-in-string ".*/\([0-9]+\).*" "\1 warning(s)" status)))))
+
+;;;  mode-line-format definition
+(let ((mode-line-edges-color))
+  (setq mode-line-format
+        `((:propertize mode-line-front-space
+                       face (:background ,mode-line-edges-color))
+          (:propertize (:eval (eliza-all-strings (eliza-git-head) " "))
+                       face (:background "#eb6086" :foreground "#ebfff0"))
+          (:propertize (25 " " mode-line-buffer-identification " " (:eval (eliza-buffer-changed-text)))
+                       face (:background "#e096a0" :foreground "#ebfff0"))
+          mode-line-misc-info
+
+          (:eval (make-string 20 ? ))
+
+          (:propertize (:eval (eliza-all-strings "-" (cadr (git-gutter:statistic)) " "))
+                       face (:background "red" :foreground "ebfff0"))
+          (:propertize (:eval (eliza-all-strings "+" (car (git-gutter:statistic)) " "))
+                       face (:background "green" :foreground "ebfff0"))
+          "Line %l (%p) "
+          (:eval (eliza-flycheck-status))
+          " "
+          (:propertize mode-line-end-spaces
+                       face (:background ,mode-line-edges-color)))))
 
 ;;; generated section
 
@@ -363,17 +391,12 @@ Otherwise, concatenates all the element of STRINGS."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(ansi-color-names-vector
-   ["#5f5f5f" "#ff4b4b" "#a1db00" "#fce94f" "#5fafd7" "#d18aff" "#afd7ff" "#ffffff"])
- '(custom-enabled-themes nil)
- '(custom-safe-themes
-   (quote
-    ("bce3ae31774e626dce97ed6d7781b4c147c990e48a35baedf67e185ebc544a56" "ff7625ad8aa2615eae96d6b4469fcc7d3d20b2e1ebc63b761a349bebbb9d23cb" "b9cbfb43711effa2e0a7fbc99d5e7522d8d8c1c151a3194a4b176ec17c9a8215" "a19265ef7ecc16ac4579abb1635fd4e3e1185dcacbc01b7a43cf7ad107c27ced" "7527f3308a83721f9b6d50a36698baaedc79ded9f6d5bd4e9a28a22ab13b3cb1" "9deeab438d1d798c26d41c759d74a2406802427ff6acb7dec8cec961bcb4e7d5" default)))
+ '(ansi-color-names-vector [])
  '(flycheck-disabled-checkers (quote (emacs-lisp-checkdoc)))
  '(inhibit-startup-screen t)
  '(package-selected-packages
    (quote
-    (zerodark-theme dracula-theme lispyville delight folding counsel vimish-fold dired-rainbow git-gutter flycheck-haskell haskell-mode hasky-stack hindent cargo rust-mode auctex avy use-package moe-theme evil-surround evil-escape ivy ujelly-theme org-link-minor-mode circe evil)))
+    (window-purpose flycheck-inline zerodark-theme vimish-fold use-package ujelly-theme telephone-line outshine moe-theme mips-mode lispyville hindent hasky-stack git-gutter fzf folding flycheck-haskell evil-surround evil-magit evil-escape evil-commentary embrace dracula-theme dired-rainbow delight counsel circe cargo auctex)))
  '(undo-tree-visualizer-diff t))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
