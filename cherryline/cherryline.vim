@@ -16,12 +16,17 @@ function! GitHead()
 endfunction
 
 function! AleStatus()
-    let status=ale#statusline#Status()
-    if status == 'OK'
-        return ''
-    else
-        return status
+    let status=ale#statusline#Count(expand('%'))
+    let acc=[]
+
+    if status['error']
+        call add(acc, status['error'])
     endif
+    if status['warning']
+        call add(acc, status['warning'])
+    endif
+
+    return join(acc, ', ')
 endfunction
 
 function! GitInsertions()
@@ -37,6 +42,7 @@ function! GitInsertions()
         return ' '.answer.' '
     endif
 endfunction
+
 function! GitDeletions()
     if !IsGitDir()
         return ''
@@ -109,7 +115,7 @@ else
     highlight CherrylineGitDeletion guifg=white guibg=red1
 endif
 
-set statusline=%#CherrylineMode#\ %{get(modes,mode(),'Um...')}\ 
+set statusline=%#CherrylineMode#\ %{get(modes,mode(),'OwO?...')}\ 
 set statusline+=%#CherrylineGitBranch#%{strlen(GitHead())>0?'\ '.GitHead().'\ ':''}
 " set statusline+=%#CherrylineGitInsert#%{empty(GitInsertions())?'':'\ '.GitInsertions()}
 " set statusline+=%#CherrylineGitDeletion#%{empty(GitDeletions())?'':'\ '.GitDeletions()}

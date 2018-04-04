@@ -31,8 +31,7 @@ shorten_prompt() {
 
 rm_safer() {
    if [ -f "$1" ]; then
-      local filename="$(basename $1)"
-      mv "$1" "$HOME/.compost/$filename"
+      mv "$@" "$HOME/.compost/$filename"
    else
       command rm "$@"
    fi

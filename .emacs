@@ -15,6 +15,10 @@
 (show-paren-mode 1)
 (blink-cursor-mode 0)
 (global-linum-mode 0)
+(electric-pair-mode)
+
+(setq-default undo-tree-auto-save-history t)
+(setq-default vc-follow-symlinks t)
 
 (setq backup-directory-alist
       `((".*" . ,temporary-file-directory)))
@@ -26,12 +30,14 @@
 (setq dired-omit-files (concat dired-omit-files "\\|^\\..+$"))
 (add-hook 'dired-mode-hook 'dired-hide-details-mode)
 
-(setq-default browse-url-generic-program "min")
+(setq-default browse-url-generic-program "min"
+              browse-url-browser-function "min"
+              gnus-button-url 'browse-url-generic)
 
 ;;; make C-w into backward-delete-word like it should be
 (defun delete-word (arg)
   "Delete characters forward until the end of the word.
-With argument, do this that many times"
+With ARG, do this that many times"
   (interactive "p")
   (if (use-region-p)
       (delete-region (region-beginning) (region-end))
@@ -39,7 +45,7 @@ With argument, do this that many times"
 
 (defun backward-delete-word (arg)
   "Delete characters backward until the end of the word.
-With argument, do this that many times"
+With ARG, do this that many times"
   (interactive "p")
   (delete-word (- arg)))
 
@@ -52,10 +58,6 @@ With argument, do this that many times"
 ;;; <tab> settings
 (setq-default indent-tabs-mode nil
               tab-width 4)
-(global-set-key (kbd "TAB") (make-hippie-expand-function
-                             '(try-expand-dabbrev
-                               try-complete-lisp-symbol-partially
-                               try-expand-dabbrev-all-buffers)))
 
 
 ;;; scroll more vim-like
@@ -68,13 +70,13 @@ With argument, do this that many times"
               scroll-down-aggressively 0.01)
 
 ;;; prettify stuff
-(require 'moe-theme)
-(require 'moe-theme-switcher)
-(setq-default moe-light-pure-white-background-in-terminal t)
+;; (require 'moe-theme)
+;; (require 'moe-theme-switcher)
+;; (setq-default moe-light-pure-white-background-in-terminal t)
 (add-to-list 'default-frame-alist '(font . "Iosevka-14"))
 
 (defun daytime-p (&optional dawn dusk)
-  "Is it daytime? It is if it's between dawn and dusk o'clock, inclusive."
+  "Is it daytime? It is if it's between DAWN and DUSK o'clock, inclusive."
   (let* ((time-to-minutes (lambda (hours minutes)
                             "Convert hour:minutes format to just minutes"
                             (+ minutes (* 60 hours))))
@@ -90,19 +92,22 @@ With argument, do this that many times"
       nil)))
 
 (defun eliza-load-theme (daytime nighttime &optional dawn dusk)
-  "Use the appropriate theme: one for daytime, one for nighttime. And no themes for terminals!"
+  "Use the appropriate theme: one for daytime, one for nighttime.  And no themes for terminals!"
   (interactive "SDaytime theme: \nSNighttime theme: ")
   (when (display-graphic-p)
     (load-theme (if (daytime-p dawn dusk)
                     daytime
                   nighttime))))
 
-(add-hook 'server-visit-hook (lambda () (eliza-load-theme 'moe-light 'moe-dark)))
+(setq-default eliza-daytime-theme 'minimal-light)
+(setq-default eliza-nighttime-theme 'minimal)
+
+(add-hook 'server-visit-hook (apply-partially #'eliza-load-theme eliza-daytime-theme eliza-nighttime-theme))
 
 
 ;;; evil utils
 (defun load-current-file ()
-  "Load the current file as elisp"
+  "Load the current file as elisp."
   (interactive)
   (load (buffer-file-name)))
 
@@ -127,7 +132,7 @@ With argument, do this that many times"
   :keymap (make-sparse-keymap))
 
 (defun eliza-init-evil ()
-  "Configure vanilla evil"
+  "Configure vanilla evil."
 
   ;; Ex commands
   (evil-ex-define-cmd      "source"                         'load-current-file)
@@ -141,7 +146,11 @@ With argument, do this that many times"
   (evil-define-weak-key    evil-staples-map "7"             'evil-scroll-line-down)
   (evil-define-weak-key    evil-staples-map "8"             'evil-scroll-line-up)
   (evil-define-weak-key    evil-staples-map (kbd "SPC w")   'save-buffer)
-  (evil-define-weak-key    evil-staples-map (kbd "SPC SPC") #'execute-extended-command)
+  (evil-define-weak-key    evil-staples-map (kbd "SPC SPC") 'execute-extended-command)
+  (evil-define-weak-key    evil-staples-map (kbd "SPC h k") 'describe-key)
+  (evil-define-weak-key    evil-staples-map (kbd "SPC h f") 'describe-function)
+  (evil-define-weak-key    evil-staples-map (kbd "SPC h v") 'describe-variable)
+  (evil-define-weak-key    evil-staples-map (kbd "SPC h p") 'describe-package)
   (evil-define-key 'normal evil-staples-map (kbd "M-p")     'switch-to-prev-buffer)
   (evil-define-key 'normal evil-staples-map (kbd "M-n")     'switch-to-next-buffer)
   (evil-define-key 'insert evil-staples-map (kbd "C-x C-p") 'evil-complete-previous)
@@ -164,13 +173,15 @@ With argument, do this that many times"
   (evil-staples 1))
 
 (defun evil-packagelist ()
-  "Use evil keybindings in M-x package-list-packages"
+  "Use evil keybindings in M-x package-list-packages."
   (evil-define-key 'normal package-menu-mode-map "i" #'package-menu-mark-install)
   (evil-define-key 'normal package-menu-mode-map "u" #'package-menu-mark-unmark)
   (evil-define-key 'normal package-menu-mode-map "x" #'package-menu-execute)
   (evil-set-initial-state 'package-menu-mode 'normal))
 
 ;;;  eliza-outline
+(require 'outline)
+
 (define-minor-mode eliza-outline
   "Evil keybindings for some useful outline commands"
   :keymap (make-sparse-keymap))
@@ -230,6 +241,43 @@ With argument, do this that many times"
         evil-escape-unordered-key-sequence t)
   :config (evil-escape-mode 1))
 
+;;;  evil-commentary
+(use-package evil-commentary
+  :ensure t
+  :after (evil)
+  :config
+  (evil-commentary-mode t))
+
+;;;  key-chord
+(use-package key-chord
+  :ensure t
+  :after (ivy)
+  :config
+  (eval-after-load "ivy" (progn
+                           (defvar ivy-minibuffer-map)
+                           (key-chord-define ivy-minibuffer-map "kl" 'ivy-avy)))
+  (key-chord-mode 1))
+
+;;;  company
+(use-package company
+  :ensure t
+  :init
+  (setq-default company-idle-delay nil)
+  (defun eliza-complete ()
+    "Use company if possible, otherwise use hippie expand"
+    (interactive)
+    (if company-mode (company-complete) (make-hippie-expand-function ; back-up completion
+                                         '(try-expand-dabbrev
+                                           try-complete-lisp-symbol-partially
+                                           try-expand-dabbrev-all-buffers))))
+  (global-set-key (kbd "TAB") 'eliza-complete)
+
+  :config
+  (global-company-mode t))
+
+;;;  sr-speedbar
+(use-package sr-speedbar
+  :ensure t)
 ;;;  avy
 (use-package avy
   :ensure t
@@ -264,6 +312,7 @@ With argument, do this that many times"
   (define-key ivy-minibuffer-map (kbd "C-k") 'ivy-previous-line)
   (define-key ivy-minibuffer-map (kbd "C-j") 'ivy-next-line)
   (define-key ivy-minibuffer-map (kbd "M-j") 'ivy-avy) ; TODO make this the keychord kl
+  (evil-define-weak-key evil-staples-map (kbd "M-f") 'swiper)
   (ivy-mode 1))
 
 ;;;  counsel
@@ -273,7 +322,12 @@ With argument, do this that many times"
   :config
   (counsel-mode)
   (global-set-key (kbd "C-x C-f") 'counsel-file-jump)
-  (evil-define-weak-key evil-staples-map (kbd "SPC e") 'counsel-file-jump))
+  (evil-define-weak-key evil-staples-map (kbd "SPC e") 'counsel-find-file))
+
+;;;  projectile
+(use-package projectile
+  :ensure t
+  :ensure counsel-projectile)
 
 ;;;  mips
 (use-package mips-mode
@@ -286,103 +340,46 @@ With argument, do this that many times"
   :init
   (evil-define-weak-key evil-staples-map (kbd "[ e") 'flycheck-previous-error)
   (evil-define-weak-key evil-staples-map (kbd "] e") 'flycheck-next-error)
+  (setq-default flycheck-indication-mode nil)
   :config
   (global-flycheck-mode 1))
 
-;;;    flycheck-inline
-(use-package flycheck-inline
-  :ensure t
-  :ensure flycheck
-  :after (flycheck)
-  :config
-  (flycheck-inline-enable))
-
-;;;  purpose
-(use-package window-purpose
-  :ensure t
-  :config
-  (purpose-mode))
 ;;;  telephone-line
 (use-package telephone-line
   :ensure t
   :init
+  (defface eliza-secondary '((t (:background "#e096a0" :foreground "#ebfff0"))) "" :group 'mode-line)
+  (setq telephone-line-faces
+        '((secondary . (eliza-secondary . eliza-secondary))
+          (evil      . telephone-line-evil-face)
+          (nil       . (mode-line . mode-line-inactive))))
+
   (telephone-line-defsegment eliza-telephone-vc ()
-    (replace-regexp-in-string "Git:" "" vc-mode))
+    (replace-regexp-in-string "Git[:-]" "" vc-mode))
+  (telephone-line-defsegment eliza-telephone-buffer ()
+    mode-line-buffer-identification)
   (telephone-line-defsegment eliza-telephone-position ()
-    (concat (line-number-at-pos (point)) " / " (line-number-at-pos (point-max))))
-  
-  )
+    `("%l / "
+      ,(number-to-string (line-number-at-pos (point-max)))))
+  (telephone-line-defsegment eliza-telephone-modified ()
+    (if (buffer-modified-p)
+        (if buffer-read-only
+            "[RO+]"
+          "[+]")
+      (if buffer-read-only
+          "[RO]"
+        "")))
 
-;;; mode-line
-(defun eliza-add-center-padding (left right)
-  "Takes lists LEFT and RIGHT and concatenates them.
-Adding enough spaces in between to fill out the modeline.
-If the result is too big for the modeline, adds a single space between because then it's no longer my problem."
-  (let ((distance (- (window-total-width) (length left) (length right))))
-    (if (natnump distance)
-        (concat left (repeat distance ? ) right)
-      (concat left " " right))))
+  (setq telephone-line-lhs
+        '((evil . (telephone-line-vc-segment))
+          (secondary . (eliza-telephone-buffer eliza-telephone-modified))
+          (nil       . "")))
+  (setq telephone-line-rhs
+        '((nil . (telephone-line-simple-major-mode-segment))
+          (secondary . (eliza-telephone-position))))
 
-(defun eliza-buffer-changed-text (&optional buf)
-  "Blank if the buffer has not been changed.
-[+] if the buffer has been changed.
-[RO] if the buffer is read-only.
-[RO+] if the buffer is read-only but has been changed anyway."
- (cond ((and buffer-read-only
-              (buffer-modified-p buf))
-         "[RO+]")
-        ((and buffer-read-only
-              (not (buffer-modified-p buf)))
-         "[RO]")
-        ((and (not buffer-read-only)
-              (buffer-modified-p buf))
-         "[+]")
-        ("")))
-
-(defun eliza-git-head ()
-  "Get a prettier version of (vc-mode vc-mode)"
-  (replace-regexp-in-string "Git:" "" vc-mode))
-
-(defun eliza-all-strings (&rest strings)
-  "If anything in STRINGS is the empty string, returns an empty list.
-Otherwise, concatenates all the element of STRINGS."
-  (if (seq-every-p (apply-partially #'string< "") strings) ; the empty string is less than all non-empty strings
-      (apply #'concat strings)
-    '("")))
-
-(defun eliza-flycheck-status ()
-  "Get a prettier version of flycheck's status"
-  (let ((status (flycheck-mode-line-status-text)))
-    (concat (if (string-match "0/" status)
-                ""
-              (replace-regexp-in-string ".*\([0-9]+\)/.*" "\1 error(s)" status))
-            " "
-            (if (string-match "/0" status)
-                ""
-              (replace-regexp-in-string ".*/\([0-9]+\).*" "\1 warning(s)" status)))))
-
-;;;  mode-line-format definition
-(let ((mode-line-edges-color))
-  (setq mode-line-format
-        `((:propertize mode-line-front-space
-                       face (:background ,mode-line-edges-color))
-          (:propertize (:eval (eliza-all-strings (eliza-git-head) " "))
-                       face (:background "#eb6086" :foreground "#ebfff0"))
-          (:propertize (25 " " mode-line-buffer-identification " " (:eval (eliza-buffer-changed-text)))
-                       face (:background "#e096a0" :foreground "#ebfff0"))
-          mode-line-misc-info
-
-          (:eval (make-string 20 ? ))
-
-          (:propertize (:eval (eliza-all-strings "-" (cadr (git-gutter:statistic)) " "))
-                       face (:background "red" :foreground "ebfff0"))
-          (:propertize (:eval (eliza-all-strings "+" (car (git-gutter:statistic)) " "))
-                       face (:background "green" :foreground "ebfff0"))
-          "Line %l (%p) "
-          (:eval (eliza-flycheck-status))
-          " "
-          (:propertize mode-line-end-spaces
-                       face (:background ,mode-line-edges-color)))))
+  :config
+  (telephone-line-mode t))
 
 ;;; generated section
 
@@ -391,16 +388,51 @@ Otherwise, concatenates all the element of STRINGS."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(TeX-view-program-selection
+   (quote
+    (((output-dvi has-no-display-manager)
+      "dvi2tty")
+     ((output-dvi style-pstricks)
+      "dvips and gv")
+     (output-dvi "xdvi")
+     (output-pdf "Zathura")
+     (output-html "xdg-open"))))
  '(ansi-color-names-vector [])
+ '(custom-enabled-themes (quote (flatui)))
  '(custom-safe-themes
    (quote
-    ("291588d57d863d0394a0d207647d9f24d1a8083bb0c9e8808280b46996f3eb83" default)))
- '(flycheck-disabled-checkers (quote (emacs-lisp-checkdoc)))
+    ("8db4b03b9ae654d4a57804286eb3e332725c84d7cdab38463cb6b97d5762ad26" "cc0dbb53a10215b696d391a90de635ba1699072745bf653b53774706999208e3" "3e335d794ed3030fefd0dbd7ff2d3555e29481fe4bbb0106ea11c660d6001767" "15348febfa2266c4def59a08ef2846f6032c0797f001d7b9148f30ace0d08bcf" "bce3ae31774e626dce97ed6d7781b4c147c990e48a35baedf67e185ebc544a56" "291588d57d863d0394a0d207647d9f24d1a8083bb0c9e8808280b46996f3eb83" default)))
+ '(evil-commentary-mode t)
+ '(fci-rule-color "#f1c40f" t)
+ '(flycheck-disabled-checkers (quote (emacs-lisp-checkdoc tex-chktex)))
+ '(hl-paren-background-colors (quote ("#2492db" "#95a5a6" nil)))
+ '(hl-paren-colors (quote ("#ecf0f1" "#ecf0f1" "#c0392b")))
  '(inhibit-startup-screen t)
  '(package-selected-packages
    (quote
-    (window-purpose flycheck-inline zerodark-theme vimish-fold use-package ujelly-theme telephone-line outshine moe-theme mips-mode lispyville hindent hasky-stack git-gutter fzf folding flycheck-haskell evil-surround evil-magit evil-escape evil-commentary embrace dracula-theme dired-rainbow delight counsel circe cargo auctex)))
- '(undo-tree-visualizer-diff t))
+    (counsel-projectile projectile-speedbar projectile minimal-theme flatui-theme lenlen-theme key-chord company flycheck-inline zerodark-theme vimish-fold use-package ujelly-theme telephone-line outshine moe-theme mips-mode lispyville hindent hasky-stack git-gutter fzf folding flycheck-haskell evil-surround evil-magit evil-escape evil-commentary dracula-theme dired-rainbow delight counsel circe cargo auctex)))
+ '(recentf-mode t)
+ '(sml/active-background-color "#34495e")
+ '(sml/active-foreground-color "#ecf0f1")
+ '(sml/inactive-background-color "#dfe4ea")
+ '(sml/inactive-foreground-color "#34495e")
+ '(undo-tree-visualizer-diff t)
+ '(vc-annotate-background "#ecf0f1")
+ '(vc-annotate-color-map
+   (quote
+    ((30 . "#e74c3c")
+     (60 . "#c0392b")
+     (90 . "#e67e22")
+     (120 . "#d35400")
+     (150 . "#f1c40f")
+     (180 . "#d98c10")
+     (210 . "#2ecc71")
+     (240 . "#27ae60")
+     (270 . "#1abc9c")
+     (300 . "#16a085")
+     (330 . "#2492db")
+     (360 . "#0a74b9"))))
+ '(vc-annotate-very-old-color "#0a74b9"))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

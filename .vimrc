@@ -4,12 +4,12 @@ Plug 'EESchneider/vim-rebase-mode'
 Plug 'KeyboardFire/vim-minisnip'
 Plug 'airblade/vim-gitgutter'
 Plug 'ap/vim-buftabline'
+Plug 'cohama/lexima.vim'
 Plug 'easymotion/vim-easymotion'
 Plug 'godlygeek/tabular'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'junegunn/fzf.vim'
 Plug 'kana/vim-arpeggio'
-Plug 'lervag/vimtex', { 'for': 'latex' }
 Plug 'machakann/vim-sandwich'
 Plug 'majutsushi/tagbar'
 Plug 'neovimhaskell/haskell-vim', { 'for': 'haskell' }
@@ -90,7 +90,6 @@ let g:netrw_altv=1
 " }}}
 
 " convenience keybindings {{{
-map <Space> <Nop>
 let mapleader="\<Space>"
 nnoremap <Leader>w :w<CR>
 nnoremap <silent> <Leader>q :call Quitbuf()<CR>
@@ -110,16 +109,15 @@ vnoremap 9 ^
 nnoremap 8 <C-y>
 nnoremap 7 <C-e>
 
-" buffer nvaigation
-nnoremap <silent> K :bp<CR>
-nnoremap <silent> J :bn<CR>
-nnoremap <silent> M J
-
 " window navigation
 noremap <C-h> <C-w>h
 noremap <C-j> <C-w>j
 noremap <C-k> <C-w>k
 noremap <C-l> <C-w>l
+
+" buffer navigation
+nnoremap <silent> [<Space> :bp<CR>
+nnoremap <silent> ]<Space> :bn<CR>
 
 vnoremap > >gv
 vnoremap < <gv
@@ -131,6 +129,13 @@ endif
 noremap ; :
 noremap : ;
 noremap q; q:
+
+noremap <silent> <Leader>ll :lopen<CR>
+noremap <silent> [l :lprev<CR>
+noremap <silent> ]l :lnext<CR>
+noremap <silent> <Leader>kk :copen<CR>
+noremap <silent> [e :cprev<CR>
+noremap <silent> ]e :cnext<CR>
 
 " indentation jumping
 noremap <M-k> :call search('^'. matchstr(getline('.'), '\(^\s*\)') .'\%<' . line('.') . 'l\S', 'be')<CR>
@@ -252,6 +257,10 @@ let g:vimtex_enabled = 1
 call arpeggio#load()
 Arpeggio inoremap jk <Esc>
 Arpeggio vnoremap jk <Esc>
+Arpeggio cnoremap jk <C-c>
+" if has('nvim')
+    " Arpeggio tnoremap jk <C-\><C-n>
+" endif
 Arpeggio imap kl <C-i>
 " }}}
 
@@ -271,13 +280,7 @@ let g:ale_set_highlights=0
 let g:ale_set_signs=0
 map <silent> [e <Plug>(ale_previous)
 map <silent> ]e <Plug>(ale_next)
-nmap <silent> ga <Plug>(ale_detail)
-noremap <silent> <Leader>ll :lopen<CR>
-noremap <silent> [l :lprev<CR>
-noremap <silent> ]l :lnext<CR>
-noremap <silent> <Leader>kk :copen<CR>
-noremap <silent> [q :cprev<CR>
-noremap <silent> ]q :cnext<CR>
+nmap <silent> ge <Plug>(ale_detail)
 function! ALEUnderlineErrors()
     highlight EvieError gui=undercurl,italic guifg=sienna
     let pattern = ''
@@ -332,7 +335,9 @@ nnoremap <Leader>gpr :GitGutterUndoHunk<CR>
 " }}}
 
 " easymotion {{{
-map , <Leader><Leader>
+let g:EasyMotion_verbose = 0
+let g:EasyMotion_use_migemo = 1
+map , <Plug>(easymotion-prefix)
 " }}}
 
 " buftabline {{{
