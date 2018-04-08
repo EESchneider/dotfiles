@@ -34,7 +34,7 @@ call plug#end()
 " Pretty things up! {{{
 function! DarkTheme()
     set bg=dark
-    colorscheme jellybeans
+    colorscheme alchemie
 endfunction
 function! LightTheme()
     set bg=light
@@ -90,6 +90,9 @@ let g:netrw_altv=1
 " }}}
 
 " convenience keybindings {{{
+nnoremap s <Nop>
+nnoremap S <Nop>
+
 let mapleader="\<Space>"
 nnoremap <Leader>w :w<CR>
 nnoremap <silent> <Leader>q :call Quitbuf()<CR>
@@ -280,7 +283,7 @@ let g:ale_set_highlights=0
 let g:ale_set_signs=0
 map <silent> [e <Plug>(ale_previous)
 map <silent> ]e <Plug>(ale_next)
-nmap <silent> ge <Plug>(ale_detail)
+nmap <silent> ga <Plug>(ale_detail)
 function! ALEUnderlineErrors()
     highlight EvieError gui=undercurl,italic guifg=sienna
     let pattern = ''
@@ -328,6 +331,7 @@ vnoremap <Leader>G<Return> :Gcommit<CR>i
 " }}}
 
 " git-gutter {{{
+let g:gitgutter_map_keys = 0
 nnoremap [g :GitGutterPrevHunk<CR>
 nnoremap ]g :GitGutterNextHunk<CR>
 nnoremap <Leader>gpw :GitGutterStageHunk<CR>
